@@ -1,0 +1,16 @@
+nostr:
+  relay_url: "ws://localhost:6969"
+  recipient_npub: "npub1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  private_key: "nsec1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+alerts:
+  monitored_entities:
+    - "input_number.logic_pwrlimit"
+    - "input_text.logic_m1_switch"
+  consolidated_entities:
+    - "input_number.logic_pwrlimit"
+    - "input_text.logic_m1_switch"
+    - "input_text.logic_m1_logstring"
+
+queue:
+  max_size: 5
