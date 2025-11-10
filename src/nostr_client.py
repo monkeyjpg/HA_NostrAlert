@@ -1,9 +1,10 @@
 """
 Nostr client for sending NIP-17 encrypted DMs
 """
-from nostr_sdk import Client, Keys, PublicKey, EventBuilder
+from nostr_sdk import Client, Keys, PublicKey, EventBuilder, NostrSigner, RelayUrl
 import logging
 import time
+import asyncio
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -14,6 +15,7 @@ class NostrClient:
         self.config = config
         self.client = None
         self.keys = None
+        self.signer = None
         self.recipient_public_key = None
         self.connect()
     
@@ -23,48 +25,61 @@ class NostrClient:
             # Create keys from private key in config
             self.keys = Keys.parse(self.config.private_key)
             
+            # Create signer from keys
+            self.signer = NostrSigner.keys(self.keys)
+            
             # Parse recipient public key
             self.recipient_public_key = PublicKey.parse(self.config.recipient_npub)
             
-            # Create client
-            self.client = Client(self.keys)
+            # Create client with signer
+            self.client = Client(self.signer)
+            
+            logger.info(f"Created Nostr client for relay: {self.config.relay_url}")
+            
+        except Exception as e:
+            logger.error(f"Error creating Nostr client: {e}")
+            raise
+    
+    async def connect_relay(self):
+        """Connect to Nostr relay"""
+        try:
+            # Parse relay URL
+            relay_url = RelayUrl.parse(self.config.relay_url)
             
             # Add relay
-            self.client.add_relay(self.config.relay_url)
+            await self.client.add_relay(relay_url)
             
             # Connect to relay
-            self.client.connect()
+            await self.client.connect()
             logger.info(f"Connected to Nostr relay: {self.config.relay_url}")
             
         except Exception as e:
             logger.error(f"Error connecting to Nostr relay: {e}")
             raise
     
-    def send_dm(self, message):
+    async def send_dm(self, message):
         """Send encrypted DM using NIP-17"""
         try:
-            # Create and send encrypted direct message
-            event = EventBuilder.encrypted_direct_msg(self.keys, self.recipient_public_key, message)
-            event_id = self.client.send_event(event)
+            # Send encrypted direct message
+            event_id = await self.client.send_private_msg(self.recipient_public_key, message)
             logger.info(f"Sent DM with event ID: {event_id}")
             return event_id
         except Exception as e:
             logger.error(f"Error sending DM: {e}")
             # Try to reconnect and resend
             try:
-                self.connect()
-                event = EventBuilder.encrypted_direct_msg(self.keys, self.recipient_public_key, message)
-                event_id = self.client.send_event(event)
+                await self.connect_relay()
+                event_id = await self.client.send_private_msg(self.recipient_public_key, message)
                 logger.info(f"Resent DM with event ID: {event_id}")
                 return event_id
             except Exception as e2:
                 logger.error(f"Error resending DM: {e2}")
                 raise e
     
-    def disconnect(self):
+    async def disconnect(self):
         """Disconnect from Nostr relay"""
         if self.client:
-            self.client.disconnect()
+            await self.client.disconnect()
             logger.info("Disconnected from Nostr relay")
 
 # Example of how to use the Nostr client
@@ -73,9 +88,14 @@ if __name__ == "__main__":
     from config import Config
     config = Config()
     
-    try:
-        nostr_client = NostrClient(config)
-        nostr_client.send_dm("Test message from HA Nostr Alert")
-        nostr_client.disconnect()
-    except Exception as e:
-        logger.error(f"Error in Nostr client test: {e}")
+    async def test_client():
+        try:
+            nostr_client = NostrClient(config)
+            await nostr_client.connect_relay()
+            await nostr_client.send_dm("Test message from HA Nostr Alert")
+            await nostr_client.disconnect()
+        except Exception as e:
+            logger.error(f"Error in Nostr client test: {e}")
+    
+    # Run the async function
+    asyncio.run(test_client())

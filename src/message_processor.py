@@ -4,6 +4,7 @@ Message processor for handling queued messages and sending consolidated alerts
 import logging
 import threading
 import time
+import asyncio
 from collections import defaultdict
 
 # Configure logging
@@ -76,8 +77,8 @@ class MessageProcessor:
             # Create consolidated message
             consolidated_message = "\n".join(message_parts)
             
-            # Send via Nostr
-            self.nostr_client.send_dm(consolidated_message)
+            # Send via Nostr (async operation)
+            asyncio.run(self.nostr_client.send_dm(consolidated_message))
             logger.info(f"Sent consolidated alert: {consolidated_message}")
             
         except Exception as e:

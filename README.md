@@ -49,9 +49,9 @@ Create a `config.yaml` file in the root directory:
 
 ```yaml
 nostr:
-  relay_url: "ws://localhost:6969"  # Your Nostr relay URL
-  recipient_npub: "npub1..."        # Recipient's public key
-  private_key: "nsec1..."           # Sender's private key
+  relay_url: "wss://relay.damus.io"  # Your Nostr relay URL
+  recipient_npub: "npub1..."         # Recipient's public key
+  private_key: "nsec1..."            # Sender's private key
 
 alerts:
   monitored_entities:

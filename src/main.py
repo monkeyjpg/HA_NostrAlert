@@ -5,6 +5,7 @@ import threading
 import queue
 import time
 import logging
+import asyncio
 from config import Config
 from webhook_server import WebhookServer
 from nostr_client import NostrClient
@@ -27,6 +28,8 @@ def main():
     # Initialize Nostr client
     try:
         nostr_client = NostrClient(config)
+        # Connect to relay
+        asyncio.run(nostr_client.connect_relay())
     except Exception as e:
         logger.error(f"Failed to initialize Nostr client: {e}")
         return
@@ -64,7 +67,7 @@ def main():
     finally:
         # Clean up
         message_processor.stop()
-        nostr_client.disconnect()
+        asyncio.run(nostr_client.disconnect())
         logger.info("HA Nostr Alert service stopped")
 
 if __name__ == "__main__":

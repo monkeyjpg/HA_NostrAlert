@@ -1,7 +1,7 @@
 nostr:
-  relay_url: "wss://relay.damus.io"
-  recipient_npub: "npub1em475kmgjmu0jnlva30gsya5lfxxtaa3hpry0xgvt723k93l3xwsz95z8g"
-  private_key: "nsec1pjll8edecejnv2utndtaauad54dkpurvlamygt5l4rxkqg59e8pqr4e5l4"
+  relay_url: "ws://localhost:6969"
+  recipient_npub: "npub1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  private_key: "nsec1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 alerts:
   monitored_entities:
