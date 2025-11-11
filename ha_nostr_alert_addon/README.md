@@ -16,13 +16,14 @@ HA Nostr Alert is a service that listens for Home Assistant webhooks and forward
 
 ## Installation
 
-For detailed installation instructions, see [InstallationInstructions.md](InstallationInstructions.md).
-
-Quick installation steps:
-1. Download the add-on package (ha_nostr_alert_addon_clean.zip)
-2. Extract it to a directory on your Home Assistant host
-3. Add the directory as a local repository in Home Assistant Supervisor
-4. Install and configure the add-on through the Home Assistant UI
+1. Navigate to the Supervisor panel in Home Assistant
+2. Go to Add-ons
+3. Click on the "+" button to add a new repository
+4. Enter the repository URL
+5. Find "HA Nostr Alert" in the add-on store
+6. Click "Install"
+7. Configure the add-on with your Nostr settings
+8. Start the add-on
 
 ## Configuration
 

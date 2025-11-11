@@ -16,12 +16,16 @@ Think of this as the system's "settings panel" or "control center".
   - Who receives messages (recipient's public key)
   - Which smart home devices to watch
   - How many messages to save when offline
+- **Recent improvements**: Better validation of settings to prevent configuration errors
+
+- Updated configuration to use local Haven relay at ws://10.66.66.107:3355 for testing.
 
 ### 2. Webhook Server (`webhook_server.py`)
 Think of this as the system's "mailbox" or "front door".
 - **What it does**: Listens for incoming messages from your smart home system
 - **How it works**: When a smart home device changes (like a switch flips), Home Assistant sends a message to this system through a specific internet address
 - **Security**: Only accepts messages from trusted sources
+- **Recent improvements**: Better data validation and error handling
 
 ### 3. Nostr Client (`nostr_client.py`)
 Think of this as the system's "secure messenger" or "mail carrier".
@@ -33,6 +37,8 @@ Think of this as the system's "secure messenger" or "mail carrier".
 - **Features**:
   - Automatically retries if connection fails
   - Maintains secure connections
+  - Has timeout protection to prevent hanging
+- **Recent improvements**: Better connection management, timeout handling, and retry mechanisms
 
 ### 4. Message Processor (`message_processor.py`)
 Think of this as the system's "message editor" or "consolidator".
@@ -42,6 +48,7 @@ Think of this as the system's "message editor" or "consolidator".
   - Combines related information into one comprehensive message
   - Example: Instead of getting three separate messages about power changes, you get one message with all the related information
   - Manages a queue of messages in case the internet goes down temporarily
+- **Recent improvements**: Better async/await implementation for improved performance
 
 ### 5. Main Application (`main.py`)
 Think of this as the system's "orchestrator" or "conductor".
@@ -51,7 +58,7 @@ Think of this as the system's "orchestrator" or "conductor".
   - Keeps everything running smoothly
   - Shuts everything down cleanly when needed
   - Acts as the central coordinator between all components
-
+- **Recent improvements**: Better async/await implementation for improved performance
 ## How It All Works Together - A Real-World Example
 
 1. **Trigger**: Your smart home energy system changes the power limit from 1000W to 800W
@@ -69,6 +76,20 @@ Think of this as the system's "orchestrator" or "conductor".
 4. **Flexibility**: Easy to configure which devices to monitor and how to handle alerts
 5. **Standards-Based**: Uses established Nostr protocols for secure messaging
 
+## Recent Improvements
+
+The system has been enhanced with several important improvements:
+
+1. **Better Async/Await Implementation**: The system now handles asynchronous operations more efficiently, leading to better performance and responsiveness.
+
+2. **Improved Error Handling**: Added timeout management and better error recovery mechanisms to make the system more robust.
+
+3. **Enhanced Connection Management**: The Nostr client now has better connection handling with automatic retries and timeout protection.
+
+4. **Stronger Data Validation**: Both the webhook server and configuration manager now have more robust validation to prevent errors.
+
+5. **More Reliable Messaging**: The message processor now handles edge cases better and ensures messages are delivered reliably.
+
 ## Key Benefits
 
 - **Instant Notifications**: Get real-time alerts about important smart home events
@@ -77,5 +98,7 @@ Think of this as the system's "orchestrator" or "conductor".
 - **Offline Resilience**: Messages are saved when internet is down and sent later
 - **Easy Configuration**: Simple text file controls all settings
 - **Open Standards**: Built on widely-adopted Nostr protocol
+- **Improved Reliability**: Better error handling and recovery mechanisms
+- **Enhanced Performance**: Optimized async/await patterns for smoother operation
 
 This system transforms raw smart home data into meaningful, secure, and timely notifications that help you stay informed about your home's operations.
