@@ -1,6 +1,0 @@
-#!/command/with-contenv bashio
-# ==============================================================================
-# HA Nostr Alert Service Finisher
-# ==============================================================================
-
-echo "=== HA Nostr Alert Service Finished ==="

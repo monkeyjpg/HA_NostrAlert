@@ -1,11 +1,8 @@
-#!/command/with-contenv bashio
+#!/bin/bash
 # ==============================================================================
 # Home Assistant Add-on: HA Nostr Alert
 # ==============================================================================
 
-# This is a placeholder script - the actual service is managed by s6-overlay
-echo "=== HA Nostr Alert Add-on Started ==="
-echo "Service is managed by s6-overlay"
-
-# Keep the container alive
-sleep infinity
+# Start the Python application directly
+cd /src
+exec python3 -u main.py

@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.15] - 2025-11-12
+
+### Fixed
+
+- Reverted to direct execution approach that was working in version 0.1.3
+- Simplified run.sh to directly execute Python application
+- Removed complex s6-overlay service structure
+- Simplified initialization script
+- Updated version to 0.1.15 to force cache refresh
+
 ## [0.1.14] - 2025-11-12
 
 ### Fixed
@@ -13,15 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Created services.d directory with run and finish scripts
 - Simplified run.sh to be a placeholder
 - Updated version to 0.1.14 to force cache refresh
-
-## [0.1.13] - 2025-11-12
-
-### Fixed
-
-- Updated initialization script to be more robust
-- Changed run.sh to use #!/command/with-contenv bashio shebang
-- Added better error handling and debugging to run.sh
-- Updated version to 0.1.13 to force cache refresh
 
 ## [0.1.6] - 2025-11-12
 
