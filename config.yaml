@@ -1,5 +1,5 @@
 name: "HA Nostr Alert"
-version: "0.1.7"
+version: "0.1.8"
 slug: "ha_nostr_alert"
 description: "Send Home Assistant alerts via Nostr NIP-17 encrypted DMs"
 url: "https://github.com/monkeyjpg/HA_NostrAlert"

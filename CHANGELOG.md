@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.8] - 2025-11-12
+
+### Fixed
+
+- Simplified run.sh to work properly with s6-overlay environment
+- Removed excessive debugging output that may interfere with s6-overlay
+- Updated version to 0.1.8 to force cache refresh
+
 ## [0.1.7] - 2025-11-12
 
 ### Fixed
@@ -22,15 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed Dockerfile to use ENTRYPOINT instead of CMD
 - Updated run.sh to use exec with python3 to properly hand off process control
 - Updated version to 0.1.6 to force cache refresh
-
-## [0.1.5] - 2025-11-12
-
-### Fixed
-
-- Fixed s6-overlay-suexec error by using plain `#!/bin/bash` shebang instead of `#!/command/with-contenv bashio`
-- Updated config.py to properly handle Home Assistant add-on environment by reading from `/data/options.json`
-- Removed exec from run.sh to avoid process management conflicts
-- Updated version to 0.1.5 to force cache refresh
 
 ## [0.1.3] - 2025-11-12
 
