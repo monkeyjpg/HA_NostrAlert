@@ -1,4 +1,4 @@
-ARG BUILD_FROM
+ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:latest
 FROM $BUILD_FROM
 
 # Install Python, pip, and jq
@@ -23,6 +23,6 @@ ENTRYPOINT [ "/run.sh" ]
 
 # Labels for Home Assistant
 LABEL \
-  io.hass.version="0.1.6" \
+  io.hass.version="0.1.7" \
   io.hass.type="addon" \
   io.hass.arch="armhf|armv7|aarch64|amd64|i386"
