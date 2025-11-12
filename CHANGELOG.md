@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.10] - 2025-11-12
+
+### Fixed
+
+- Reverted to plain #!/bin/bash shebang that was working in version 0.1.3
+- Simplified run.sh to minimal working version
+- Updated version to 0.1.10 to force cache refresh
+
 ## [0.1.9] - 2025-11-12
 
 ### Fixed
@@ -13,14 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed exec from run.sh to avoid process management conflicts
 - Changed Dockerfile to use CMD instead of ENTRYPOINT
 - Updated version to 0.1.9 to force cache refresh
-
-## [0.1.8] - 2025-11-12
-
-### Fixed
-
-- Simplified run.sh to work properly with s6-overlay environment
-- Removed excessive debugging output that may interfere with s6-overlay
-- Updated version to 0.1.8 to force cache refresh
 
 ## [0.1.6] - 2025-11-12
 
