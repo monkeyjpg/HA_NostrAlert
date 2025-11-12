@@ -23,6 +23,6 @@ CMD [ "/run.sh" ]
 
 # Labels for Home Assistant
 LABEL \
-  io.hass.version="0.1.10" \
+  io.hass.version="0.1.11" \
   io.hass.type="addon" \
   io.hass.arch="armhf|armv7|aarch64|amd64|i386"
