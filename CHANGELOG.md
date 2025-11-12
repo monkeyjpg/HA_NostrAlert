@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.12] - 2025-11-12
+
+### Fixed
+
+- Added s6-overlay initialization script to create required directories
+- Updated Dockerfile to copy rootfs directory
+- Updated version to 0.1.12 to force cache refresh
+
 ## [0.1.11] - 2025-11-12
 
 ### Fixed
@@ -12,14 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added debugging output to run.sh to diagnose startup issues
 - Check for required files and configuration before starting Python application
 - Updated version to 0.1.11 to force cache refresh
-
-## [0.1.10] - 2025-11-12
-
-### Fixed
-
-- Reverted to plain #!/bin/bash shebang that was working in version 0.1.3
-- Simplified run.sh to minimal working version
-- Updated version to 0.1.10 to force cache refresh
 
 ## [0.1.6] - 2025-11-12
 

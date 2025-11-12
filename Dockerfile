@@ -8,6 +8,7 @@ RUN apk add --no-cache python3 py3-pip jq bash
 COPY requirements.txt /
 COPY src/ /src/
 COPY run.sh /
+COPY rootfs/ /
 
 # Install Python dependencies
 RUN pip3 install --no-cache-dir --break-system-packages -r /requirements.txt
@@ -23,6 +24,6 @@ CMD [ "/run.sh" ]
 
 # Labels for Home Assistant
 LABEL \
-  io.hass.version="0.1.11" \
+  io.hass.version="0.1.12" \
   io.hass.type="addon" \
   io.hass.arch="armhf|armv7|aarch64|amd64|i386"
