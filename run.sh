@@ -1,18 +1,13 @@
-#!/bin/bash
+#!/usr/bin/with-contenv bashio
 # ==============================================================================
 # Home Assistant Add-on: HA Nostr Alert
 # ==============================================================================
 
-# Enable debug output
-set -x
-
-# Log environment information
+# Log environment information for debugging
 echo "=== Environment Debug Info ==="
 echo "PID: $$"
 echo "User: $(id)"
 echo "Working directory: $(pwd)"
-echo "Environment variables:"
-env | grep -E "(HOME|USER|PATH|S6|CONT)" | sort
 
 # Show configuration if it exists
 echo "=== Configuration Debug Info ==="
@@ -23,9 +18,9 @@ else
     echo "No options file found"
 fi
 
-# Simple approach - just start the Python application directly
-echo "=== Starting Python application ==="
+# Change to src directory and start the Python application
 cd /src
+echo "=== Starting Python application ==="
 echo "Current directory: $(pwd)"
 ls -la
-python3 -u main.py
+exec python3 -u main.py
