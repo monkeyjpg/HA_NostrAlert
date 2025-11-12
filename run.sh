@@ -1,36 +1,15 @@
-#!/command/with-contenv bashio
+#!/bin/bash
 
-# ==============================================================================
-# Home Assistant Add-on: HA Nostr Alert
-# ==============================================================================
-
-# Read configuration from Home Assistant
-RELAY_URL=$(bashio::config 'relay_url')
-RECIPIENT_NPUB=$(bashio::config 'recipient_npub')
-PRIVATE_KEY=$(bashio::config 'private_key')
-
-# Create application config.yaml
+# Create a simple config file for testing
 cat > /config.yaml <<EOF
 nostr:
-  relay_url: "${RELAY_URL}"
-  recipient_npub: "${RECIPIENT_NPUB}"
-  private_key: "${PRIVATE_KEY}"
+  relay_url: "wss://relay.damus.io"
+  recipient_npub: ""
+  private_key: ""
 
 alerts:
-  monitored_entities:
-EOF
-
-bashio::config 'monitored_entities' | jq -r '.[]' | while read entity; do
-  echo "    - \"${entity}\"" >> /config.yaml
-done
-
-echo "  consolidated_entities:" >> /config.yaml
-
-bashio::config 'consolidated_entities' | jq -r '.[]' | while read entity; do
-  echo "    - \"${entity}\"" >> /config.yaml
-done
-
-cat >> /config.yaml <<EOF
+  monitored_entities: []
+  consolidated_entities: []
 
 queue:
   max_size: 5
