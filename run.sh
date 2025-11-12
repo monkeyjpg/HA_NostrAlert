@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bashio
+#!/command/with-contenv bashio
 # ==============================================================================
 # Home Assistant Add-on: HA Nostr Alert
 # Run the HA Nostr Alert service
@@ -43,5 +43,5 @@ EOF
 # Change to the source directory
 cd /src
 
-# Execute the Python application directly
-exec python3 main.py
+# Execute the Python application
+exec python3 -u main.py
