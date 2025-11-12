@@ -2,6 +2,7 @@
 Configuration management for HA Nostr Alert
 """
 import yaml
+import json
 import os
 import logging
 
@@ -15,6 +16,41 @@ class Config:
         self.config = self.load_config()
     
     def load_config(self):
+        """Load configuration from Home Assistant add-on options or YAML file"""
+        # First check if we're in Home Assistant add-on environment
+        if os.path.exists('/data/options.json'):
+            logger.info("Loading configuration from Home Assistant add-on options")
+            return self.load_ha_config()
+        else:
+            logger.info("Loading configuration from YAML file")
+            return self.load_yaml_config()
+    
+    def load_ha_config(self):
+        """Load configuration from Home Assistant add-on options"""
+        with open('/data/options.json', 'r') as file:
+            options = json.load(file)
+        
+        # Map Home Assistant options to our internal config structure
+        config = {
+            'nostr': {
+                'relay_url': options.get('relay_url', 'wss://relay.damus.io'),
+                'recipient_npub': options.get('recipient_npub', ''),
+                'private_key': options.get('private_key', '')
+            },
+            'alerts': {
+                'monitored_entities': options.get('monitored_entities', []),
+                'consolidated_entities': options.get('consolidated_entities', [])
+            },
+            'queue': {
+                'max_size': 5  # Default value
+            }
+        }
+        
+        # Validate configuration
+        self.validate_config(config)
+        return config
+    
+    def load_yaml_config(self):
         """Load configuration from YAML file"""
         if not os.path.exists(self.config_path):
             # Create default configuration
@@ -65,7 +101,7 @@ class Config:
             logger.warning("Recipient npub may not be in correct format")
         
         # Validate nsec format (basic check)
-        if nostr_section['private_key'] and not nostr_section['private_key'].startswith('nsec1'):
+        if nostr_section['private_key'] and not nostr_section['private_key'].startswith(('nsec1', 'ncryptsec1')):
             logger.warning("Private key may not be in correct format")
         
         # Check alerts section

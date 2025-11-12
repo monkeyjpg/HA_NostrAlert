@@ -15,8 +15,14 @@ RUN pip3 install --no-cache-dir --break-system-packages -r /requirements.txt
 # Make run script executable
 RUN chmod a+x /run.sh
 
+# Set the working directory
+WORKDIR /
+
+# Define the command to run the application
+CMD [ "/run.sh" ]
+
 # Labels for Home Assistant
 LABEL \
-  io.hass.version="0.1.3" \
+  io.hass.version="0.1.5" \
   io.hass.type="addon" \
   io.hass.arch="armhf|armv7|aarch64|amd64|i386"

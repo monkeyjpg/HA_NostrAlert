@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2025-11-12
+
+### Fixed
+
+- Fixed s6-overlay-suexec error by using plain `#!/bin/bash` shebang instead of `#!/command/with-contenv bashio`
+- Updated config.py to properly handle Home Assistant add-on environment by reading from `/data/options.json`
+- Removed exec from run.sh to avoid process management conflicts
+- Updated version to 0.1.5 to force cache refresh
+
+## [0.1.4] - 2025-11-12
+
+### Fixed
+
+- Reverted to using `#!/command/with-contenv bashio` shebang to properly integrate with Home Assistant's s6-overlay
+- Added proper CMD directive to Dockerfile
+- Updated version to 0.1.4 to force cache refresh
+- Removed exec from run.sh to avoid process management conflicts
+
 ## [0.1.3] - 2025-11-12
 
 ### Fixed

@@ -14,29 +14,18 @@ echo "Working directory: $(pwd)"
 echo "Environment variables:"
 env | grep -E "(HOME|USER|PATH|S6|CONT)" | sort
 
-# Create a minimal default config file to avoid any issues
-echo "=== Creating config file ==="
-cat > /config.yaml <<EOF
-nostr:
-  relay_url: "wss://relay.damus.io"
-  recipient_npub: ""
-  private_key: ""
-
-alerts:
-  monitored_entities: []
-  consolidated_entities: []
-
-queue:
-  max_size: 5
-EOF
-
-# Show what we created
-echo "=== Config file contents ==="
-cat /config.yaml
+# Show configuration if it exists
+echo "=== Configuration Debug Info ==="
+if [ -f "/data/options.json" ]; then
+    echo "Options file exists:"
+    cat /data/options.json
+else
+    echo "No options file found"
+fi
 
 # Simple approach - just start the Python application directly
 echo "=== Starting Python application ==="
 cd /src
 echo "Current directory: $(pwd)"
 ls -la
-exec python3 -u main.py
+python3 -u main.py
