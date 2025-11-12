@@ -1,4 +1,8 @@
 #!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Home Assistant Add-on: HA Nostr Alert
+# Run the HA Nostr Alert service
+# ==============================================================================
 
 # Read configuration from Home Assistant
 RELAY_URL=$(bashio::config 'relay_url')
@@ -36,6 +40,8 @@ queue:
   max_size: 5
 EOF
 
-# Start the application
+# Change to the source directory
 cd /src
+
+# Execute the Python application directly
 exec python3 main.py
