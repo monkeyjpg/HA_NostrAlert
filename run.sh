@@ -1,6 +1,6 @@
-#!/command/with-contenv bashio
+#!/bin/bash
 
-# Read configuration from Home Assistant
+# Read configuration from Home Assistant using bashio
 RELAY_URL=$(bashio::config 'relay_url')
 RECIPIENT_NPUB=$(bashio::config 'recipient_npub')
 PRIVATE_KEY=$(bashio::config 'private_key')
