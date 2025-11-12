@@ -1,0 +1,10 @@
+#!/command/with-contenv bashio
+# ==============================================================================
+# HA Nostr Alert Service Runner
+# ==============================================================================
+
+echo "=== Starting HA Nostr Alert Service ==="
+
+# Change to src directory and start the Python application
+cd /src
+exec python3 -u main.py
