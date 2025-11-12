@@ -1,6 +1,10 @@
-#!/bin/bash
+#!/command/with-contenv bashio
 
-# Read configuration from Home Assistant using bashio
+# ==============================================================================
+# Home Assistant Add-on: HA Nostr Alert
+# ==============================================================================
+
+# Read configuration from Home Assistant
 RELAY_URL=$(bashio::config 'relay_url')
 RECIPIENT_NPUB=$(bashio::config 'recipient_npub')
 PRIVATE_KEY=$(bashio::config 'private_key')
@@ -32,5 +36,6 @@ queue:
   max_size: 5
 EOF
 
+# Change to source directory and execute Python application
 cd /src
 exec python3 -u main.py
