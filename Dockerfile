@@ -10,7 +10,7 @@ COPY src/ /src/
 COPY run.sh /
 
 # Install Python dependencies
-RUN pip3 install --no-cache-dir -r /requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r /requirements.txt
 
 # Make run script executable
 RUN chmod a+x /run.sh
