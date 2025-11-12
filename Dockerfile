@@ -19,10 +19,10 @@ RUN chmod a+x /run.sh
 WORKDIR /
 
 # Define the command to run the application
-ENTRYPOINT [ "/run.sh" ]
+CMD [ "/run.sh" ]
 
 # Labels for Home Assistant
 LABEL \
-  io.hass.version="0.1.8" \
+  io.hass.version="0.1.9" \
   io.hass.type="addon" \
   io.hass.arch="armhf|armv7|aarch64|amd64|i386"
