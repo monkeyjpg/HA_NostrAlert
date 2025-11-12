@@ -1,21 +1,63 @@
+#!/usr/bin/env python3
 """
 Main entry point for HA Nostr Alert
 """
+import sys
+import os
 import threading
 import queue
 import time
 import logging
 import asyncio
 import signal
-import sys
-from config import Config
-from webhook_server import WebhookServer
-from nostr_client import NostrClient
-from message_processor import MessageProcessor
+
+# Add debug logging at the very beginning
+print("=== main.py starting ===", file=sys.stderr)
+print(f"Python version: {sys.version}", file=sys.stderr)
+print(f"Current working directory: {os.getcwd()}", file=sys.stderr)
+print(f"Python path: {sys.path}", file=sys.stderr)
+
+# Try to import modules and catch any import errors
+try:
+    from config import Config
+    print("=== Successfully imported config ===", file=sys.stderr)
+except Exception as e:
+    print(f"=== Failed to import config: {e} ===", file=sys.stderr)
+    import traceback
+    traceback.print_exc(file=sys.stderr)
+    sys.exit(1)
+
+try:
+    from webhook_server import WebhookServer
+    print("=== Successfully imported webhook_server ===", file=sys.stderr)
+except Exception as e:
+    print(f"=== Failed to import webhook_server: {e} ===", file=sys.stderr)
+    import traceback
+    traceback.print_exc(file=sys.stderr)
+    sys.exit(1)
+
+try:
+    from nostr_client import NostrClient
+    print("=== Successfully imported nostr_client ===", file=sys.stderr)
+except Exception as e:
+    print(f"=== Failed to import nostr_client: {e} ===", file=sys.stderr)
+    import traceback
+    traceback.print_exc(file=sys.stderr)
+    sys.exit(1)
+
+try:
+    from message_processor import MessageProcessor
+    print("=== Successfully imported message_processor ===", file=sys.stderr)
+except Exception as e:
+    print(f"=== Failed to import message_processor: {e} ===", file=sys.stderr)
+    import traceback
+    traceback.print_exc(file=sys.stderr)
+    sys.exit(1)
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+logger.info("Starting HA Nostr Alert service")
 
 # Global variables for cleanup
 message_processor = None
@@ -36,7 +78,7 @@ def signal_handler(signum, frame):
 
 def main():
     """Main function to start the HA Nostr Alert service"""
-    logger.info("Starting HA Nostr Alert service")
+    logger.info("Starting HA Nostr Alert service main function")
     
     # Set up signal handlers for graceful shutdown
     signal.signal(signal.SIGTERM, signal_handler)
@@ -45,7 +87,13 @@ def main():
     global message_processor, nostr_client, loop
     
     # Load configuration
-    config = Config()
+    try:
+        logger.info("Loading configuration...")
+        config = Config()
+        logger.info("Configuration loaded successfully")
+    except Exception as e:
+        logger.error(f"Failed to load configuration: {e}")
+        return
     
     # Create message queue
     message_queue = queue.Queue(maxsize=config.max_queue_size)
@@ -56,25 +104,42 @@ def main():
     
     # Initialize Nostr client
     try:
+        logger.info("Initializing Nostr client...")
         nostr_client = NostrClient(config)
         # Connect to relay
+        logger.info("Connecting to Nostr relay...")
         loop.run_until_complete(nostr_client.connect_relay())
+        logger.info("Nostr client initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize Nostr client: {e}")
         return
     
     # Initialize message processor
-    message_processor = MessageProcessor(config, message_queue, nostr_client)
+    try:
+        logger.info("Initializing message processor...")
+        message_processor = MessageProcessor(config, message_queue, nostr_client)
+        logger.info("Message processor initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize message processor: {e}")
+        return
     
     # Initialize webhook server
-    webhook_server = WebhookServer(config, message_queue)
+    try:
+        logger.info("Initializing webhook server...")
+        webhook_server = WebhookServer(config, message_queue)
+        logger.info("Webhook server initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize webhook server: {e}")
+        return
     
     # Start components
     try:
         # Start message processor
+        logger.info("Starting message processor...")
         message_processor.start()
         
         # Start webhook server in a separate thread
+        logger.info("Starting webhook server...")
         server_thread = threading.Thread(
             target=webhook_server.run,
             kwargs={'host': '0.0.0.0', 'port': 5000}
@@ -90,6 +155,8 @@ def main():
             
     except Exception as e:
         logger.error(f"Error in main loop: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
     finally:
         # Clean up
         if message_processor:
@@ -102,4 +169,5 @@ def main():
         logger.info("HA Nostr Alert service stopped")
 
 if __name__ == "__main__":
+    print("=== About to call main() ===", file=sys.stderr)
     main()
