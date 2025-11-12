@@ -65,21 +65,7 @@ mkdir -p /share/local-addon-repo
    ```
    https://github.com/yourusername/HA_nostrAlert.git
    ```
-   _Note: For local development, you can also try using the local path format `local:/share/local-addon-repo` if the standard path doesn't work_
 7. Click **Add**
-
-### Alternative Method for Local Development
-
-If you're doing local development and want to test without pushing to a Git repository:
-
-1. Copy the entire `ha_nostr_alert_addon` directory to your Home Assistant instance
-2. Place it in `/share/local-addon-repo/` directory
-3. In the **Repositories** section, try using the format:
-   ```
-   local:/share/local-addon-repo
-   ```
-   
-If that doesn't work, you can also directly place the add-on files in the `/addons` directory on your Home Assistant instance.
 
 ### 4. Install the Add-on
 
