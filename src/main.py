@@ -6,6 +6,8 @@ import queue
 import time
 import logging
 import asyncio
+import signal
+import sys
 from config import Config
 from webhook_server import WebhookServer
 from nostr_client import NostrClient
@@ -15,9 +17,32 @@ from message_processor import MessageProcessor
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Global variables for cleanup
+message_processor = None
+nostr_client = None
+loop = None
+
+def signal_handler(signum, frame):
+    """Handle shutdown signals"""
+    logger.info(f"Received signal {signum}, shutting down gracefully...")
+    if message_processor:
+        message_processor.stop()
+    if nostr_client and loop:
+        try:
+            loop.run_until_complete(nostr_client.disconnect())
+        except Exception as e:
+            logger.error(f"Error disconnecting from Nostr: {e}")
+    sys.exit(0)
+
 def main():
     """Main function to start the HA Nostr Alert service"""
     logger.info("Starting HA Nostr Alert service")
+    
+    # Set up signal handlers for graceful shutdown
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    global message_processor, nostr_client, loop
     
     # Load configuration
     config = Config()
@@ -58,20 +83,22 @@ def main():
         server_thread.start()
         
         logger.info("HA Nostr Alert service started successfully")
-        logger.info("Press Ctrl+C to stop the service")
         
         # Keep the main thread alive
         while True:
             time.sleep(1)
             
-    except KeyboardInterrupt:
-        logger.info("Shutting down HA Nostr Alert service")
     except Exception as e:
         logger.error(f"Error in main loop: {e}")
     finally:
         # Clean up
-        message_processor.stop()
-        loop.run_until_complete(nostr_client.disconnect())
+        if message_processor:
+            message_processor.stop()
+        if nostr_client and loop:
+            try:
+                loop.run_until_complete(nostr_client.disconnect())
+            except Exception as e:
+                logger.error(f"Error disconnecting from Nostr: {e}")
         logger.info("HA Nostr Alert service stopped")
 
 if __name__ == "__main__":

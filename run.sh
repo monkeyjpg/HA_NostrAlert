@@ -38,4 +38,4 @@ EOF
 
 # Start the application
 cd /src
-python3 main.py
+exec python3 main.py
