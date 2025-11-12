@@ -33,12 +33,12 @@ relay_url: "wss://relay.damus.io"
 recipient_npub: "npub1example..."
 private_key: "nsec1example..."
 monitored_entities:
-  - "input_number.logic_pwrlimit"
-  - "input_text.logic_m1_switch"
+  - "input_number.entity1"
+  - "input_text.entity2"
 consolidated_entities:
-  - "input_number.logic_pwrlimit"
-  - "input_text.logic_m1_switch"
-  - "input_text.logic_m1_logstring"
+  - "input_number.entity1"
+  - "input_text.entity2"
+  - "input_text.entity3"
 ```
 
 ### Setting up webhooks in Home Assistant
