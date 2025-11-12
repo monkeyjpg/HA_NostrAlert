@@ -11,7 +11,7 @@ arch:
   - i386
 startup: "application"
 boot: "auto"
- ports:
+ports:
   5000/tcp: 5000
 ports_description:
   5000/tcp: "Webhook listener port"

@@ -2,6 +2,8 @@
 
 This Home Assistant add-on allows you to send Home Assistant alerts via Nostr NIP-17 encrypted DMs.
 
+**Note:** This code was developed with the assistance of [Goose](https://github.com/block/goose), an AI coding assistant.
+
 ## About
 
 HA Nostr Alert is a service that listens for Home Assistant webhooks and forwards them as encrypted direct messages over the Nostr protocol. This provides a secure, decentralized way to receive notifications from your Home Assistant instance.
