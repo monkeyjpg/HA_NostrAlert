@@ -1,0 +1,15 @@
+#!/usr/bin/with-contenv bashio
+# vim: ft=bash
+# shellcheck shell=bash
+# ==============================================================================
+# Home Assistant Add-on: HA Nostr Alert
+# Runs the HA Nostr Alert service
+# ==============================================================================
+
+bashio::log.info "Starting HA Nostr Alert service..."
+
+# Change to source directory
+cd /src
+
+# Start the Python application
+exec python3 -u main.py

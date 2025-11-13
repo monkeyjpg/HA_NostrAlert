@@ -1,0 +1,9 @@
+#!/usr/bin/with-contenv bashio
+# vim: ft=bash
+# shellcheck shell=bash
+# ==============================================================================
+# Home Assistant Add-on: HA Nostr Alert
+# Finish script for HA Nostr Alert service
+# ==============================================================================
+
+bashio::log.info "HA Nostr Alert service finished"
