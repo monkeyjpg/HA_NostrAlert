@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.17] - 2025-11-13
+
+### Fixed
+
+- Completely removed s6-overlay initialization script that was causing suexec errors
+- Removed rootfs/etc/cont-init.d/10-ha-nostr-alert.sh entirely
+- Removed unnecessary directory creation that may have interfered with s6-overlay
+- Updated version to 0.1.17 to force cache refresh
+
 ## [0.1.16] - 2025-11-13
 
 ### Fixed
