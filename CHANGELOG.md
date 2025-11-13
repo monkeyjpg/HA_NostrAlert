@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.18] - 2025-11-13
+
+### Fixed
+
+- Created clean deployment package without archive directory that contained old problematic files
+- Removed all archived files from deployment package that may have contained conflicting scripts
+- Updated to version 0.1.18 to force cache refresh with clean package
+
 ## [0.1.17] - 2025-11-13
 
 ### Fixed
