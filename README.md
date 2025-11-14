@@ -30,11 +30,25 @@ Quick installation steps:
 
 The add-on requires the following configuration:
 
-- `relay_url`: The Nostr relay URL to connect to
+- `relay_urls`: List of Nostr relay URLs to connect to (in order of priority)
 - `recipient_npub`: The recipient's public key (npub)
 - `private_key`: Your private key (nsec)
 - `monitored_entities`: List of entities to monitor
 - `consolidated_entities`: List of entities to include in consolidated messages
+
+### Multi-Relay Support (v0.1.22+)
+
+Starting with version 0.1.22, the add-on supports multiple relays with priority-based failover:
+
+```yaml
+relay_urls:
+  - "wss://relay.0xchat.com"    # Primary relay
+  - "wss://relay.damus.io"      # Secondary relay
+  - "wss://relay.primal.net"    # Tertiary relay
+  - "wss://relay.nostr.band"    # Quaternary relay
+```
+
+The system will connect to the first available relay in the list. If the primary relay becomes unavailable, it will automatically failover to the next relay. Background health monitoring continuously checks all configured relays and attempts to reconnect to failed relays.
 
 ## Usage
 

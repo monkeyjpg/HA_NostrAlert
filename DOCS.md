@@ -20,16 +20,22 @@ The add-on requires the following configuration parameters:
 
 #### Basic Configuration
 
-- `relay_url`: The Nostr relay URL to connect to (e.g., `wss://relay.damus.io`)
+- `relay_urls`: List of Nostr relay URLs to connect to (in order of priority)
 - `recipient_npub`: The recipient's public key in npub format
 - `private_key`: Your private key in nsec format
 - `monitored_entities`: List of entity IDs to monitor for changes
 - `consolidated_entities`: List of entity IDs to include in consolidated messages
 
-#### Example configuration
+#### Multi-Relay Configuration (v0.1.22+)
+
+Starting with version 0.1.22, the add-on supports multiple relays with priority-based failover. Configure multiple relays as a list:
 
 ```yaml
-relay_url: "wss://relay.damus.io"
+relay_urls:
+  - "wss://relay.0xchat.com"    # Primary relay (highest priority)
+  - "wss://relay.damus.io"      # Secondary relay
+  - "wss://relay.primal.net"    # Tertiary relay
+  - "wss://relay.nostr.band"    # Quaternary relay (lowest priority)
 recipient_npub: "npub1example..."
 private_key: "nsec1example..."
 monitored_entities:
@@ -40,6 +46,34 @@ consolidated_entities:
   - "input_text.entity2"
   - "input_text.entity3"
 ```
+
+##### How Multi-Relay Works
+
+1. **Priority-Based Connection**: The system attempts to connect to relays in the order they appear in the list
+2. **Automatic Failover**: If the primary relay becomes unavailable, the system automatically switches to the next available relay
+3. **Background Health Monitoring**: Every 5 minutes, the system checks the status of all configured relays
+4. **Automatic Reconnection**: Failed relays are periodically retried (up to 3 times by default)
+5. **Seamless Operation**: Message delivery continues uninterrupted during relay switches
+
+##### Benefits
+
+- **Improved Reliability**: No longer dependent on a single relay
+- **Automatic Recovery**: Self-healing when relays become temporarily unavailable
+- **Load Distribution**: Spreads connections across multiple relays
+- **Reduced Downtime**: Minimizes service interruptions due to relay issues
+
+#### Legacy Single Relay Configuration
+
+For backward compatibility, you can still use the old single relay configuration:
+
+```yaml
+relay_url: "wss://relay.damus.io"
+recipient_npub: "npub1example..."
+private_key: "nsec1example..."
+# ... rest of configuration
+```
+
+This will be automatically converted to a single-item relay list.
 
 ### Setting up webhooks in Home Assistant
 
