@@ -71,7 +71,8 @@ def signal_handler(signum, frame):
         message_processor.stop()
     if nostr_client and loop:
         try:
-            loop.run_until_complete(nostr_client.disconnect())
+            loop.run_until_complete(nostr_client.stop_health_monitoring())
+            loop.run_until_complete(nostr_client.disconnect_all())
         except Exception as e:
             logger.error(f"Error disconnecting from Nostr: {e}")
     sys.exit(0)
@@ -106,9 +107,11 @@ def main():
     try:
         logger.info("Initializing Nostr client...")
         nostr_client = NostrClient(config)
-        # Connect to relay
+        # Connect to primary relay
         logger.info("Connecting to Nostr relay...")
-        loop.run_until_complete(nostr_client.connect_relay())
+        loop.run_until_complete(nostr_client.connect_to_primary_relay())
+        # Start health monitoring
+        loop.run_until_complete(nostr_client.start_health_monitoring())
         logger.info("Nostr client initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize Nostr client: {e}")
@@ -163,7 +166,8 @@ def main():
             message_processor.stop()
         if nostr_client and loop:
             try:
-                loop.run_until_complete(nostr_client.disconnect())
+                loop.run_until_complete(nostr_client.stop_health_monitoring())
+                loop.run_until_complete(nostr_client.disconnect_all())
             except Exception as e:
                 logger.error(f"Error disconnecting from Nostr: {e}")
         logger.info("HA Nostr Alert service stopped")

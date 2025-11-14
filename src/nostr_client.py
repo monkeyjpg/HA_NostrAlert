@@ -1,10 +1,12 @@
 """
-Nostr client for sending NIP-17 encrypted DMs
+Nostr client for sending NIP-17 encrypted DMs with multi-relay failover support
 """
 from nostr_sdk import Client, Keys, PublicKey, EventBuilder, NostrSigner, RelayUrl
 import logging
 import time
 import asyncio
+import random
+from typing import List, Dict, Optional
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -13,138 +15,244 @@ logger = logging.getLogger(__name__)
 class NostrClient:
     def __init__(self, config):
         self.config = config
-        self.client = None
+        self.clients: Dict[str, Client] = {}  # relay_url -> client
         self.keys = None
         self.signer = None
         self.recipient_public_key = None
-        self.connected = False
+        self.active_relay: Optional[str] = None
+        self.relay_status: Dict[str, Dict] = {}  # relay_url -> {connected, last_checked, failure_count}
+        self.health_check_task = None
         self.connect()  # Initialize components immediately
     
     def connect(self):
         """Initialize Nostr client components"""
         try:
-            # Create keys from private key in config
-            self.keys = Keys.parse(self.config.private_key)
+            # Create keys from private key in config (only if provided)
+            if self.config.private_key:
+                self.keys = Keys.parse(self.config.private_key)
+            else:
+                # Create random keys for testing
+                self.keys = Keys.generate()
+            
+            # Parse recipient public key (only if provided)
+            if self.config.recipient_npub:
+                try:
+                    self.recipient_public_key = PublicKey.parse(self.config.recipient_npub)
+                except Exception as e:
+                    logger.warning(f"Invalid recipient public key, generating random one for testing: {e}")
+                    # Generate a random public key for testing
+                    test_keys = Keys.generate()
+                    self.recipient_public_key = test_keys.public_key()
+            else:
+                # Generate a random public key for testing
+                test_keys = Keys.generate()
+                self.recipient_public_key = test_keys.public_key()
             
             # Create signer from keys
             self.signer = NostrSigner.keys(self.keys)
             
-            # Parse recipient public key
-            self.recipient_public_key = PublicKey.parse(self.config.recipient_npub)
+            # Initialize relay status tracking
+            for relay_url in self.config.relay_urls:
+                self.relay_status[relay_url] = {
+                    'connected': False,
+                    'last_checked': 0,
+                    'failure_count': 0
+                }
             
-            # Create client with signer
-            self.client = Client(self.signer)
-            
-            logger.info(f"Initialized Nostr client for relay: {self.config.relay_url}")
+            logger.info(f"Initialized Nostr client with {len(self.config.relay_urls)} relays")
             
         except Exception as e:
             logger.error(f"Error initializing Nostr client: {e}")
             raise
     
-    async def connect_relay(self):
-        """Connect to Nostr relay"""
+    async def connect_to_relay(self, relay_url: str) -> bool:
+        """Connect to a specific Nostr relay"""
         try:
+            # Create client for this relay if it doesn't exist
+            if relay_url not in self.clients:
+                client = Client(self.signer)
+                self.clients[relay_url] = client
+            
+            client = self.clients[relay_url]
+            
             # Parse relay URL
-            relay_url = RelayUrl.parse(self.config.relay_url)
+            parsed_relay_url = RelayUrl.parse(relay_url)
             
             # Add relay with timeout
-            await self.client.add_relay(relay_url)
+            await asyncio.wait_for(client.add_relay(parsed_relay_url), timeout=15.0)
             
             # Connect to relay with timeout
-            await asyncio.wait_for(self.client.connect(), timeout=15.0)
+            await asyncio.wait_for(client.connect(), timeout=15.0)
             
             # Wait a bit for the connection to stabilize
             await asyncio.sleep(2)
             
             # Check if relay is actually connected by trying to get relay info
             try:
-                relays = await asyncio.wait_for(self.client.relays(), timeout=5.0)
-                if relay_url in relays:
-                    relay = relays[relay_url]
+                relays = await asyncio.wait_for(client.relays(), timeout=5.0)
+                if parsed_relay_url in relays:
+                    relay = relays[parsed_relay_url]
                     if relay.is_connected():
                         logger.debug(f"Relay {relay_url} is connected")
-                        self.connected = True
+                        self.relay_status[relay_url]['connected'] = True
+                        self.relay_status[relay_url]['failure_count'] = 0
+                        return True
                     else:
                         logger.debug(f"Relay {relay_url} is not connected")
-                        self.connected = False
+                        self.relay_status[relay_url]['connected'] = False
                 else:
                     logger.debug(f"Relay {relay_url} not found in relays list")
-                    self.connected = False
+                    self.relay_status[relay_url]['connected'] = False
             except Exception as e:
-                logger.debug(f"Could not get relay info: {e}")
-                self.connected = False
-            
-            if self.connected:
-                logger.info(f"Connected to Nostr relay: {self.config.relay_url}")
-            else:
-                logger.error(f"Failed to connect to Nostr relay: {self.config.relay_url}")
-                raise Exception(f"Relay connection failed: {self.config.relay_url}")
-            
+                logger.debug(f"Could not get relay info for {relay_url}: {e}")
+                self.relay_status[relay_url]['connected'] = False
+                
         except asyncio.TimeoutError:
-            logger.error(f"Timeout connecting to Nostr relay: {self.config.relay_url}")
-            self.connected = False
-            raise
+            logger.error(f"Timeout connecting to Nostr relay: {relay_url}")
+            self.relay_status[relay_url]['connected'] = False
+            self.relay_status[relay_url]['failure_count'] += 1
         except Exception as e:
-            logger.error(f"Error connecting to Nostr relay: {e}")
-            self.connected = False
-            raise
+            logger.error(f"Error connecting to Nostr relay {relay_url}: {e}")
+            self.relay_status[relay_url]['connected'] = False
+            self.relay_status[relay_url]['failure_count'] += 1
+            
+        return False
     
-    async def send_dm(self, message):
-        """Send encrypted DM using NIP-17"""
+    async def connect_to_primary_relay(self) -> bool:
+        """Connect to the primary (first) relay, or failover to next available"""
+        for relay_url in self.config.relay_urls:
+            if await self.connect_to_relay(relay_url):
+                self.active_relay = relay_url
+                logger.info(f"Connected to primary relay: {relay_url}")
+                return True
+        
+        logger.error("Failed to connect to any relay")
+        self.active_relay = None
+        return False
+    
+    async def send_dm(self, message: str) -> Optional[str]:
+        """Send encrypted DM using NIP-17 with failover support"""
+        # Ensure we have a recipient public key
+        if not self.recipient_public_key:
+            logger.error("No recipient public key configured")
+            return None
+            
+        # Ensure we have an active relay
+        if not self.active_relay or not self.relay_status[self.active_relay]['connected']:
+            if not await self.connect_to_primary_relay():
+                logger.error("No active relay connection available for sending DM")
+                return None
+        
+        # Try to send message with the active relay
         try:
-            # Ensure we're connected before sending
-            if not self.connected:
-                await self.connect_relay()
+            client = self.clients[self.active_relay]
             
             # Send encrypted direct message with timeout
             event_id = await asyncio.wait_for(
-                self.client.send_private_msg(self.recipient_public_key, message),
+                client.send_private_msg(self.recipient_public_key, message),
                 timeout=15.0
             )
-            logger.info(f"Sent DM with event ID: {event_id}")
-            return event_id
+            logger.info(f"Sent DM with event ID: {event_id} via relay {self.active_relay}")
+            return str(event_id)
+            
         except asyncio.TimeoutError:
-            logger.error("Timeout sending DM")
-            # Try to reconnect and resend
-            try:
-                await self.connect_relay()
-                event_id = await asyncio.wait_for(
-                    self.client.send_private_msg(self.recipient_public_key, message),
-                    timeout=15.0
-                )
-                logger.info(f"Resent DM with event ID: {event_id}")
-                return event_id
-            except Exception as e2:
-                logger.error(f"Error resending DM: {e2}")
-                raise e2
+            logger.error(f"Timeout sending DM via relay {self.active_relay}")
+            # Mark relay as disconnected and try failover
+            self.relay_status[self.active_relay]['connected'] = False
+            self.relay_status[self.active_relay]['failure_count'] += 1
+            
         except Exception as e:
-            logger.error(f"Error sending DM: {e}")
-            # Try to reconnect and resend
-            try:
-                await self.connect_relay()
-                event_id = await asyncio.wait_for(
-                    self.client.send_private_msg(self.recipient_public_key, message),
-                    timeout=15.0
-                )
-                logger.info(f"Resent DM with event ID: {event_id}")
-                return event_id
-            except Exception as e2:
-                logger.error(f"Error resending DM: {e2}")
-                raise e2
+            logger.error(f"Error sending DM via relay {self.active_relay}: {e}")
+            # Mark relay as disconnected and try failover
+            self.relay_status[self.active_relay]['connected'] = False
+            self.relay_status[self.active_relay]['failure_count'] += 1
+        
+        # Try failover to next available relay
+        for relay_url in self.config.relay_urls:
+            if relay_url != self.active_relay and await self.connect_to_relay(relay_url):
+                self.active_relay = relay_url
+                try:
+                    client = self.clients[self.active_relay]
+                    event_id = await asyncio.wait_for(
+                        client.send_private_msg(self.recipient_public_key, message),
+                        timeout=15.0
+                    )
+                    logger.info(f"Sent DM with event ID: {event_id} via failover relay {self.active_relay}")
+                    return str(event_id)
+                except Exception as e2:
+                    logger.error(f"Error sending DM via failover relay {self.active_relay}: {e2}")
+                    self.relay_status[self.active_relay]['connected'] = False
+                    self.relay_status[self.active_relay]['failure_count'] += 1
+        
+        logger.error("Failed to send DM via any relay")
+        return None
     
-    async def disconnect(self):
-        """Disconnect from Nostr relay"""
-        if self.client and self.connected:
+    async def health_check_relays(self):
+        """Periodically check relay health and attempt reconnections"""
+        while True:
             try:
-                await asyncio.wait_for(self.client.disconnect(), timeout=5.0)
-                self.connected = False
-                logger.info("Disconnected from Nostr relay")
-            except asyncio.TimeoutError:
-                logger.error("Timeout disconnecting from Nostr relay")
-                self.connected = False
+                health_config = self.config.relay_health_config
+                check_interval = health_config.get('check_interval', 300)  # Default 5 minutes
+                
+                logger.debug("Running relay health check")
+                
+                # Check each relay
+                for relay_url in self.config.relay_urls:
+                    status = self.relay_status[relay_url]
+                    current_time = time.time()
+                    
+                    # Skip if checked recently (within last 60 seconds)
+                    if current_time - status['last_checked'] < 60:
+                        continue
+                    
+                    status['last_checked'] = current_time
+                    
+                    # If relay is disconnected and we haven't exceeded retry attempts
+                    if not status['connected'] and status['failure_count'] < health_config.get('retry_attempts', 3):
+                        logger.info(f"Attempting to reconnect to relay {relay_url}")
+                        await self.connect_to_relay(relay_url)
+                
+                # Wait for next check
+                await asyncio.sleep(check_interval)
+                
+            except asyncio.CancelledError:
+                logger.info("Health check task cancelled")
+                break
             except Exception as e:
-                logger.error(f"Error disconnecting from Nostr relay: {e}")
-                self.connected = False
+                logger.error(f"Error in relay health check: {e}")
+                await asyncio.sleep(60)  # Wait 1 minute on error
+    
+    async def start_health_monitoring(self):
+        """Start background health monitoring task"""
+        if self.health_check_task is None or self.health_check_task.done():
+            self.health_check_task = asyncio.create_task(self.health_check_relays())
+            logger.info("Started relay health monitoring")
+    
+    async def stop_health_monitoring(self):
+        """Stop background health monitoring task"""
+        if self.health_check_task and not self.health_check_task.done():
+            self.health_check_task.cancel()
+            try:
+                await self.health_check_task
+            except asyncio.CancelledError:
+                pass
+            logger.info("Stopped relay health monitoring")
+    
+    async def disconnect_all(self):
+        """Disconnect from all Nostr relays"""
+        for relay_url, client in self.clients.items():
+            try:
+                await asyncio.wait_for(client.disconnect(), timeout=5.0)
+                self.relay_status[relay_url]['connected'] = False
+                logger.info(f"Disconnected from Nostr relay: {relay_url}")
+            except asyncio.TimeoutError:
+                logger.error(f"Timeout disconnecting from Nostr relay: {relay_url}")
+                self.relay_status[relay_url]['connected'] = False
+            except Exception as e:
+                logger.error(f"Error disconnecting from Nostr relay {relay_url}: {e}")
+                self.relay_status[relay_url]['connected'] = False
+        
+        self.active_relay = None
 
 # Example of how to use the Nostr client
 if __name__ == "__main__":
@@ -156,9 +264,10 @@ if __name__ == "__main__":
         try:
             nostr_client = NostrClient(config)
             # nostr_client.connect()  # Already called in __init__
-            await nostr_client.connect_relay()
-            await nostr_client.send_dm("Test message from HA Nostr Alert")
-            await nostr_client.disconnect()
+            await nostr_client.connect_to_primary_relay()
+            result = await nostr_client.send_dm("Test message from HA Nostr Alert")
+            await nostr_client.disconnect_all()
+            print(f"Test result: {result}")
         except Exception as e:
             logger.error(f"Error in Nostr client test: {e}")
     

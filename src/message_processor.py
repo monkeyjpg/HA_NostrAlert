@@ -86,8 +86,11 @@ class MessageProcessor:
             consolidated_message = "\n".join(message_parts)
             
             # Send via Nostr (async operation)
-            await self.nostr_client.send_dm(consolidated_message)
-            logger.info(f"Sent consolidated alert: {consolidated_message}")
+            result = await self.nostr_client.send_dm(consolidated_message)
+            if result:
+                logger.info(f"Sent consolidated alert: {consolidated_message}")
+            else:
+                logger.error("Failed to send consolidated alert")
             
         except Exception as e:
             logger.error(f"Error sending consolidated alert: {e}")

@@ -30,10 +30,17 @@ class Config:
         with open('/data/options.json', 'r') as file:
             options = json.load(file)
         
+        # Handle backward compatibility for single relay_url
+        relay_urls = options.get('relay_urls')
+        if not relay_urls:
+            # Fallback to single relay_url for backward compatibility
+            single_relay = options.get('relay_url', 'wss://relay.damus.io')
+            relay_urls = [single_relay] if isinstance(single_relay, str) else single_relay
+        
         # Map Home Assistant options to our internal config structure
         config = {
             'nostr': {
-                'relay_url': options.get('relay_url', 'wss://relay.damus.io'),
+                'relay_urls': relay_urls,
                 'recipient_npub': options.get('recipient_npub', ''),
                 'private_key': options.get('private_key', '')
             },
@@ -43,6 +50,11 @@ class Config:
             },
             'queue': {
                 'max_size': 5  # Default value
+            },
+            'relay_health': {
+                'check_interval': 300,  # 5 minutes default
+                'retry_attempts': 3,
+                'retry_backoff_factor': 2
             }
         }
         
@@ -53,10 +65,15 @@ class Config:
     def load_yaml_config(self):
         """Load configuration from YAML file"""
         if not os.path.exists(self.config_path):
-            # Create default configuration
+            # Create default configuration with multiple relays
             default_config = {
                 'nostr': {
-                    'relay_url': 'wss://relay.damus.io',
+                    'relay_urls': [
+                        'wss://relay.0xchat.com',
+                        'wss://relay.damus.io',
+                        'wss://relay.primal.net',
+                        'wss://relay.nostr.band'
+                    ],
                     'recipient_npub': '',
                     'private_key': ''
                 },
@@ -73,6 +90,11 @@ class Config:
                 },
                 'queue': {
                     'max_size': 5
+                },
+                'relay_health': {
+                    'check_interval': 300,  # 5 minutes
+                    'retry_attempts': 3,
+                    'retry_backoff_factor': 2
                 }
             }
             self.save_config(default_config)
@@ -80,6 +102,20 @@ class Config:
         
         with open(self.config_path, 'r') as file:
             config = yaml.safe_load(file)
+            # Handle backward compatibility for single relay_url
+            if 'nostr' in config and 'relay_url' in config['nostr'] and 'relay_urls' not in config['nostr']:
+                config['nostr']['relay_urls'] = [config['nostr']['relay_url']]
+                # Remove the old single relay_url field
+                del config['nostr']['relay_url']
+            
+            # Add default relay_health config if missing
+            if 'relay_health' not in config:
+                config['relay_health'] = {
+                    'check_interval': 300,  # 5 minutes
+                    'retry_attempts': 3,
+                    'retry_backoff_factor': 2
+                }
+            
             # Validate configuration
             self.validate_config(config)
             return config
@@ -91,10 +127,20 @@ class Config:
             raise ValueError("Missing 'nostr' section in configuration")
         
         nostr_section = config['nostr']
-        required_nostr_fields = ['relay_url', 'recipient_npub', 'private_key']
+        # Updated to check for relay_urls instead of relay_url
+        required_nostr_fields = ['relay_urls', 'recipient_npub', 'private_key']
         for field in required_nostr_fields:
             if field not in nostr_section:
                 raise ValueError(f"Missing '{field}' in nostr configuration")
+        
+        # Validate relay_urls is a list
+        if not isinstance(nostr_section['relay_urls'], list) or len(nostr_section['relay_urls']) == 0:
+            raise ValueError("'relay_urls' must be a non-empty list")
+        
+        # Validate each relay URL format (basic check)
+        for relay_url in nostr_section['relay_urls']:
+            if not isinstance(relay_url, str) or not relay_url.startswith('wss://'):
+                logger.warning(f"Relay URL may not be in correct format: {relay_url}")
         
         # Validate npub format (basic check)
         if nostr_section['recipient_npub'] and not nostr_section['recipient_npub'].startswith('npub1'):
@@ -130,6 +176,16 @@ class Config:
         if not isinstance(queue_section['max_size'], int) or queue_section['max_size'] <= 0:
             raise ValueError("'max_size' must be a positive integer")
         
+        # Check relay_health section
+        if 'relay_health' not in config:
+            raise ValueError("Missing 'relay_health' section in configuration")
+        
+        relay_health_section = config['relay_health']
+        required_relay_health_fields = ['check_interval', 'retry_attempts', 'retry_backoff_factor']
+        for field in required_relay_health_fields:
+            if field not in relay_health_section:
+                raise ValueError(f"Missing '{field}' in relay_health configuration")
+        
         logger.info("Configuration validation completed")
     
     def save_config(self, config):
@@ -138,8 +194,13 @@ class Config:
             yaml.dump(config, file, default_flow_style=False)
     
     @property
+    def relay_urls(self):
+        return self.config['nostr']['relay_urls']
+    
+    @property
     def relay_url(self):
-        return self.config['nostr']['relay_url']
+        # Backward compatibility - return the first relay URL
+        return self.config['nostr']['relay_urls'][0] if self.config['nostr']['relay_urls'] else None
     
     @property
     def recipient_npub(self):
@@ -160,3 +221,11 @@ class Config:
     @property
     def max_queue_size(self):
         return self.config['queue']['max_size']
+    
+    @property
+    def relay_health_config(self):
+        return self.config.get('relay_health', {
+            'check_interval': 300,
+            'retry_attempts': 3,
+            'retry_backoff_factor': 2
+        })

@@ -19,13 +19,18 @@ ports_description:
 map:
   - config:rw
 options:
-  relay_url: "wss://relay.damus.io"
+  relay_urls:
+    - "wss://relay.0xchat.com"
+    - "wss://relay.damus.io"
+    - "wss://relay.primal.net"
+    - "wss://relay.nostr.band"
   recipient_npub: ""
   private_key: ""
   monitored_entities: []
   consolidated_entities: []
 schema:
-  relay_url: "str"
+  relay_urls:
+    - "str"
   recipient_npub: "str"
   private_key: "str"
   monitored_entities:
