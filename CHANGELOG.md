@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.22] - 2025-11-14
+
+### Added
+
+- Multi-relay support with priority-based failover for improved reliability
+- Background health monitoring with periodic relay connection checks
+- Automatic reconnection attempts with configurable retry logic
+- Support for configuring multiple Nostr relays in order of preference
+- Enhanced relay status tracking and failure count monitoring
+
+### Changed
+
+- Updated configuration structure to support `relay_urls` array instead of single `relay_url`
+- Modified NostrClient to manage multiple concurrent relay connections
+- Enhanced error handling and logging for relay management
+- Updated main application to integrate relay health monitoring
+
+### Fixed
+
+- Relay disconnection issues that caused message delivery failures
+- Improved resilience when individual relays become unavailable
+- Enhanced failover mechanism for seamless relay switching
+
 ## [0.1.21] - 2025-11-13
 
 ### Fixed
