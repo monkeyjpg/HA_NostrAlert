@@ -19,7 +19,8 @@ print(f"Python path: {sys.path}", file=sys.stderr)
 
 # Try to import modules and catch any import errors
 try:
-    from config import Config
+    from config import Config  # noqa: E402
+    from .exceptions import HA_Nostr_Alert_Error, ConfigurationError, RelayConnectionError, MessageProcessingError
     print("=== Successfully imported config ===", file=sys.stderr)
 except Exception as e:
     print(f"=== Failed to import config: {e} ===", file=sys.stderr)
@@ -71,10 +72,18 @@ def signal_handler(signum, frame):
         message_processor.stop()
     if nostr_client and loop:
         try:
+            # Cancel any pending tasks
+            pending = asyncio.all_tasks(loop)
+            for task in pending:
+                task.cancel()
+            
             loop.run_until_complete(nostr_client.stop_health_monitoring())
             loop.run_until_complete(nostr_client.disconnect_all())
+            loop.run_until_complete(loop.shutdown_asyncgens())
         except Exception as e:
             logger.error(f"Error disconnecting from Nostr: {e}")
+        finally:
+            loop.close()
     sys.exit(0)
 
 def main():

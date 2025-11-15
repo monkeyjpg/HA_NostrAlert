@@ -286,8 +286,14 @@ class NostrClient:
     
     async def disconnect_all(self) -> None:
         """Disconnect from all Nostr relays"""
+        # Cancel any pending operations first
         for relay_url, client in self.clients.items():
             try:
+                # Cancel any pending tasks associated with this client
+                if hasattr(client, '_pending_tasks'):
+                    for task in client._pending_tasks:
+                        task.cancel()
+                
                 await asyncio.wait_for(client.disconnect(), timeout=5.0)
                 self.relay_status[relay_url]['connected'] = False
                 logger.info(f"Disconnected from Nostr relay: {relay_url}")
@@ -299,6 +305,8 @@ class NostrClient:
                 self.relay_status[relay_url]['connected'] = False
         
         self.active_relay = None
+        # Clear clients to free memory
+        self.clients.clear()
 
 # Example of how to use the Nostr client
 if __name__ == "__main__":

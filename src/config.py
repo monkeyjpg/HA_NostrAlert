@@ -241,19 +241,12 @@ class Config:
         if not url.startswith('wss://'):
             return False
         
-        # Basic URL structure validation
-        if len(url) < 7:  # Minimum "wss://x"
+        # Use urllib to parse and validate URL structure
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(url)
+            if not parsed.hostname or '.' not in parsed.hostname:
+                return False
+            return True
+        except Exception:
             return False
-            
-        # Extract hostname part
-        hostname_part = url[6:]  # Remove "wss://"
-        if not hostname_part or '.' not in hostname_part:
-            return False
-            
-        # Check for valid characters in hostname
-        import re
-        hostname_pattern = re.compile(r'^[a-zA-Z0-9.-]+$')
-        if not hostname_pattern.match(hostname_part.split('/')[0].split(':')[0]):
-            return False
-            
-        return True
