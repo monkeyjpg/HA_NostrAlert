@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.24] - 2025-11-15
+
+### Added
+
+- Comprehensive type hints throughout the codebase for better code clarity and IDE support
+- Custom exception classes for more granular error handling (ConfigurationError, ValidationError, RelayConnectionError, MessageProcessingError)
+- Enhanced relay URL validation with stricter format checking
+- Thread synchronization in message processor for improved thread safety
+
+### Changed
+
+- Improved configuration validation with more robust URL format checking
+- Updated import statements to use absolute imports for better module organization
+- Enhanced error handling with custom exception types
+- Added type annotations to all function signatures and variable declarations
+
 ## [0.1.23] - 2025-11-15
 
 ### Fixed

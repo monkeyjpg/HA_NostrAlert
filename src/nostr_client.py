@@ -6,25 +6,27 @@ import logging
 import time
 import asyncio
 import random
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any, Union
+import traceback
+from src.exceptions import RelayConnectionError, MessageProcessingError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class NostrClient:
-    def __init__(self, config):
+    def __init__(self, config: Any) -> None:
         self.config = config
         self.clients: Dict[str, Client] = {}  # relay_url -> client
-        self.keys = None
-        self.signer = None
-        self.recipient_public_key = None
+        self.keys: Optional[Keys] = None
+        self.signer: Optional[NostrSigner] = None
+        self.recipient_public_key: Optional[PublicKey] = None
         self.active_relay: Optional[str] = None
-        self.relay_status: Dict[str, Dict] = {}  # relay_url -> {connected, last_checked, failure_count}
-        self.health_check_task = None
+        self.relay_status: Dict[str, Dict[str, Union[bool, int, float]]] = {}  # relay_url -> {connected, last_checked, failure_count}
+        self.health_check_task: Optional[asyncio.Task] = None
         self.connect()  # Initialize components immediately
     
-    def connect(self):
+    def connect(self) -> None:
         """Initialize Nostr client components"""
         try:
             # Create keys from private key in config (only if provided)
@@ -63,7 +65,7 @@ class NostrClient:
             
         except Exception as e:
             logger.error(f"Error initializing Nostr client: {e}")
-            raise
+            raise  # Re-raise the exception
     
     async def connect_to_relay(self, relay_url: str) -> bool:
         """Connect to a specific Nostr relay"""
@@ -231,7 +233,7 @@ class NostrClient:
         logger.error("Failed to send DM via any relay")
         return None
     
-    async def health_check_relays(self):
+    async def health_check_relays(self) -> None:
         """Periodically check relay health and attempt reconnections"""
         while True:
             try:
@@ -266,13 +268,13 @@ class NostrClient:
                 logger.error(f"Error in relay health check: {e}")
                 await asyncio.sleep(60)  # Wait 1 minute on error
     
-    async def start_health_monitoring(self):
+    async def start_health_monitoring(self) -> None:
         """Start background health monitoring task"""
         if self.health_check_task is None or self.health_check_task.done():
             self.health_check_task = asyncio.create_task(self.health_check_relays())
             logger.info("Started relay health monitoring")
     
-    async def stop_health_monitoring(self):
+    async def stop_health_monitoring(self) -> None:
         """Stop background health monitoring task"""
         if self.health_check_task and not self.health_check_task.done():
             self.health_check_task.cancel()
@@ -282,7 +284,7 @@ class NostrClient:
                 pass
             logger.info("Stopped relay health monitoring")
     
-    async def disconnect_all(self):
+    async def disconnect_all(self) -> None:
         """Disconnect from all Nostr relays"""
         for relay_url, client in self.clients.items():
             try:

@@ -5,19 +5,20 @@ from flask import Flask, request, jsonify
 import logging
 import threading
 import queue
+from typing import Any, Dict, Optional
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class WebhookServer:
-    def __init__(self, config, message_queue):
-        self.app = Flask(__name__)
+    def __init__(self, config: Any, message_queue: queue.Queue):
+        self.app: Flask = Flask(__name__)
         self.config = config
         self.message_queue = message_queue
         self.setup_routes()
     
-    def setup_routes(self):
+    def setup_routes(self) -> None:
         """Set up Flask routes"""
         self.app.add_url_rule('/webhook', 'webhook', self.handle_webhook, methods=['POST'])
         self.app.add_url_rule('/health', 'health', self.health_check, methods=['GET'])
@@ -25,15 +26,15 @@ class WebhookServer:
     def handle_webhook(self):
         """Handle incoming webhook from Home Assistant"""
         try:
-            data = request.get_json()
+            data: Optional[Dict[str, Any]] = request.get_json()
             
             # Validate data structure
             if not isinstance(data, dict):
                 logger.warning("Invalid webhook data format")
                 return jsonify({"status": "error", "message": "Invalid data format"}), 400
             
-            entity_id = data.get('entity_id')
-            new_state = data.get('new_state')
+            entity_id: Optional[str] = data.get('entity_id')
+            new_state: Optional[Dict[str, Any]] = data.get('new_state')
             
             if not entity_id or new_state is None:
                 logger.warning("Missing required fields in webhook data")
@@ -65,7 +66,7 @@ class WebhookServer:
             "max_queue_size": self.config.max_queue_size
         }), 200
     
-    def run(self, host='0.0.0.0', port=5000):
+    def run(self, host: str = '0.0.0.0', port: int = 5000) -> None:
         """Run the webhook server"""
         logger.info(f"Starting webhook server on {host}:{port}")
         self.app.run(host=host, port=port, debug=False)
@@ -75,6 +76,6 @@ if __name__ == "__main__":
     # This is just for testing the webhook server independently
     from config import Config
     config = Config()
-    message_queue = queue.Queue(maxsize=5)
+    message_queue: queue.Queue = queue.Queue(maxsize=5)
     server = WebhookServer(config, message_queue)
     server.run()
