@@ -90,7 +90,7 @@ class MessageProcessor:
             if result:
                 logger.info(f"Sent consolidated alert: {consolidated_message}")
             else:
-                logger.error("Failed to send consolidated alert")
+                logger.error(f"Failed to send consolidated alert: {consolidated_message}")
             
         except Exception as e:
             logger.error(f"Error sending consolidated alert: {e}")

@@ -118,6 +118,34 @@ class NostrClient:
             
         return False
     
+    async def verify_relay_connection(self, relay_url: str) -> bool:
+        """Verify that a relay connection is still active"""
+        if relay_url not in self.clients:
+            return False
+            
+        if not self.relay_status.get(relay_url, {}).get('connected', False):
+            return False
+            
+        try:
+            client = self.clients[relay_url]
+            # Try to get relay info as a connection test
+            relays = await asyncio.wait_for(client.relays(), timeout=5.0)
+            parsed_relay_url = RelayUrl.parse(relay_url)
+            
+            if parsed_relay_url in relays:
+                relay = relays[parsed_relay_url]
+                is_connected = relay.is_connected()
+                self.relay_status[relay_url]['connected'] = is_connected
+                return is_connected
+            else:
+                self.relay_status[relay_url]['connected'] = False
+                return False
+                
+        except Exception as e:
+            logger.debug(f"Connection verification failed for relay {relay_url}: {e}")
+            self.relay_status[relay_url]['connected'] = False
+            return False
+    
     async def connect_to_primary_relay(self) -> bool:
         """Connect to the primary (first) relay, or failover to next available"""
         for relay_url in self.config.relay_urls:
@@ -137,11 +165,22 @@ class NostrClient:
             logger.error("No recipient public key configured")
             return None
             
-        # Ensure we have an active relay
+        # Ensure we have an active relay, or establish one
         if not self.active_relay or not self.relay_status[self.active_relay]['connected']:
+            logger.info("No active relay or connection lost, attempting to connect to primary relay")
             if not await self.connect_to_primary_relay():
-                logger.error("No active relay connection available for sending DM")
+                logger.error("Failed to establish connection to any relay")
                 return None
+        
+        # Verify the active relay is still connected before sending
+        if not await self.verify_relay_connection(self.active_relay):
+            logger.warning(f"Active relay {self.active_relay} connection verification failed")
+            # Try to reconnect to the active relay first
+            if not await self.connect_to_relay(self.active_relay):
+                # If that fails, try to connect to primary relay
+                if not await self.connect_to_primary_relay():
+                    logger.error("Failed to reconnect to any relay")
+                    return None
         
         # Try to send message with the active relay
         try:
@@ -168,8 +207,13 @@ class NostrClient:
             self.relay_status[self.active_relay]['failure_count'] += 1
         
         # Try failover to next available relay
+        logger.info("Attempting failover to next available relay")
         for relay_url in self.config.relay_urls:
-            if relay_url != self.active_relay and await self.connect_to_relay(relay_url):
+            # Skip the currently failed relay
+            if relay_url == self.active_relay:
+                continue
+                
+            if await self.connect_to_relay(relay_url):
                 self.active_relay = relay_url
                 try:
                     client = self.clients[self.active_relay]
