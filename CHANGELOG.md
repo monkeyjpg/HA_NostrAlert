@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.25] - 2025-11-15
+
+### Added
+
+- Timestamp formatting for DM messages (YYYY-MM-DD HH:MM:SS) for better temporal context
+- Friendly name support in DM messages for improved readability
+- Enhanced signal handling with proper task cancellation and event loop cleanup
+- Improved thread safety in message processor with better queue handling
+
+### Changed
+
+- Enhanced resource management with proper cleanup of asyncio tasks and clients
+- Improved error messages in webhook server with detailed diagnostic information
+- Enhanced configuration validation using urllib for more robust URL parsing
+- Better queue full handling with appropriate HTTP status codes (503 Service Unavailable)
+
+### Fixed
+
+- Race conditions in message processor through improved thread synchronization
+- Resource leaks through proper cleanup of asyncio tasks and client connections
+- Incomplete shutdown procedures with enhanced signal handling
+
 ## [0.1.24] - 2025-11-15
 
 ### Added
