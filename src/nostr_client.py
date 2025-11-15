@@ -8,7 +8,7 @@ import asyncio
 import random
 from typing import List, Dict, Optional, Any, Union
 import traceback
-from src.exceptions import RelayConnectionError, MessageProcessingError
+from exceptions import RelayConnectionError, MessageProcessingError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

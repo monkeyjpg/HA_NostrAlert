@@ -9,7 +9,7 @@ import queue
 from collections import defaultdict
 from typing import Any, Dict, Set, Optional
 from datetime import datetime
-from src.exceptions import MessageProcessingError
+from exceptions import MessageProcessingError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

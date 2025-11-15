@@ -20,7 +20,7 @@ print(f"Python path: {sys.path}", file=sys.stderr)
 # Try to import modules and catch any import errors
 try:
     from config import Config  # noqa: E402
-    from .exceptions import HA_Nostr_Alert_Error, ConfigurationError, RelayConnectionError, MessageProcessingError
+    from exceptions import HA_Nostr_Alert_Error, ConfigurationError, RelayConnectionError, MessageProcessingError
     print("=== Successfully imported config ===", file=sys.stderr)
 except Exception as e:
     print(f"=== Failed to import config: {e} ===", file=sys.stderr)

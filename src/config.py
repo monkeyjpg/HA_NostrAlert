@@ -7,7 +7,7 @@ import os
 import logging
 import re
 from typing import Dict, List, Any, Optional, Union
-from src.exceptions import ConfigurationError, ValidationError
+from exceptions import ConfigurationError, ValidationError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
