@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.26] - 2025-11-15
+
+### Fixed
+
+- Resolved ModuleNotFoundError in Home Assistant add-on environment by correcting import statements
+- Changed absolute package imports to direct module imports to match container file structure
+- Fixed import paths in config.py, main.py, message_processor.py, and nostr_client.py
+- This resolves the issue where the add-on was failing to start with "No module named 'src'" error
+
 ## [0.1.25] - 2025-11-15
 
 ### Added

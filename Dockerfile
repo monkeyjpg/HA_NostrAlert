@@ -16,6 +16,6 @@ COPY rootfs /
 
 # Labels for Home Assistant
 LABEL \
-  io.hass.version="0.1.25" \
+  io.hass.version="0.1.26" \
   io.hass.type="addon" \
   io.hass.arch="armhf|armv7|aarch64|amd64|i386"
