@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.28] - 2025-11-17
+
+### Fixed
+
+- Simplified keepalive and connection verification mechanisms to use standard relay queries instead of complex filters
+- Improved reliability of keepalive pings to prevent false disconnection detections
+- Enhanced connection verification to use straightforward relay status checks
+- Reduced complexity of WebSocket connection management for better stability
+
 ## [0.1.27] - 2025-11-17
 
 ### Fixed

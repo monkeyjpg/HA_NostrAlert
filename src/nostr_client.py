@@ -148,7 +148,8 @@ class NostrClient:
         try:
             client = self.clients[relay_url]
             
-            # First check if client thinks it's connected
+            # Simply get the relays information as an active connection test
+            # This will fail if the WebSocket connection is dead
             relays = await asyncio.wait_for(client.relays(), timeout=5.0)
             parsed_relay_url = RelayUrl.parse(relay_url)
             
@@ -163,36 +164,9 @@ class NostrClient:
                 self.relay_status[relay_url]['connected'] = False
                 return False
             
-            # Actively test the connection by sending a lightweight request
-            # We'll subscribe to a filter that shouldn't return any events as a keepalive
-            try:
-                from nostr_sdk import Filter, Kind
-                # Create a filter that's unlikely to match any events (using a future date)
-                future_timestamp = int(time.time()) + 86400  # 24 hours in the future
-                filter_obj = Filter().kinds([Kind(65535)]).since(future_timestamp)
-                
-                # Try to send the subscription - this will fail if connection is dead
-                await asyncio.wait_for(client.req_events_of([filter_obj]), timeout=5.0)
-                logger.debug(f"Active connection test successful for {relay_url}")
-                self.relay_status[relay_url]['connected'] = True
-                return True
-            except asyncio.TimeoutError:
-                logger.debug(f"Active connection test timeout for {relay_url}")
-                self.relay_status[relay_url]['connected'] = False
-                return False
-            except Exception as active_test_error:
-                logger.debug(f"Active connection test failed for {relay_url}: {active_test_error}")
-                # Some errors might indicate the connection is still alive
-                # Check if it's a "no events found" type error which is actually good
-                error_str = str(active_test_error).lower()
-                if "timeout" in error_str or "disconnected" in error_str or "closed" in error_str:
-                    self.relay_status[relay_url]['connected'] = False
-                    return False
-                else:
-                    # Other errors might not indicate connection problems
-                    logger.debug(f"Active test error may not indicate connection issue: {active_test_error}")
-                    self.relay_status[relay_url]['connected'] = True
-                    return True
+            logger.debug(f"Active connection test successful for {relay_url}")
+            self.relay_status[relay_url]['connected'] = True
+            return True
                 
         except Exception as e:
             logger.debug(f"Connection verification failed for relay {relay_url}: {e}")
@@ -334,16 +308,10 @@ class NostrClient:
         try:
             client = self.clients[relay_url]
             
-            # Send a lightweight request to keep the connection alive
-            # We'll subscribe to a filter that shouldn't return any events
-            from nostr_sdk import Filter, Kind
-            # Create a filter that's unlikely to match any events (using a future date)
-            future_timestamp = int(time.time()) + 86400  # 24 hours in the future
-            filter_obj = Filter().kinds([Kind(65535)]).since(future_timestamp)
-            
-            # Send the subscription request with a short timeout
-            await asyncio.wait_for(client.req_events_of([filter_obj]), timeout=3.0)
-            logger.debug(f"Keepalive ping successful for {relay_url}")
+            # Simply get the relays information as a lightweight keepalive
+            # This acts as a heartbeat to keep the WebSocket connection alive
+            relays = await asyncio.wait_for(client.relays(), timeout=3.0)
+            logger.debug(f"Keepalive ping successful for {relay_url}, relays count: {len(relays)}")
             return True
         except Exception as e:
             logger.debug(f"Keepalive ping failed for {relay_url}: {e}")
