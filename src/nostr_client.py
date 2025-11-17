@@ -70,12 +70,22 @@ class NostrClient:
     async def connect_to_relay(self, relay_url: str) -> bool:
         """Connect to a specific Nostr relay"""
         try:
-            # Create client for this relay if it doesn't exist
-            if relay_url not in self.clients:
-                client = Client(self.signer)
-                self.clients[relay_url] = client
+            # If we already have a client for this relay, disconnect it first to avoid stale connections
+            if relay_url in self.clients:
+                try:
+                    old_client = self.clients[relay_url]
+                    await asyncio.wait_for(old_client.disconnect(), timeout=5.0)
+                    logger.debug(f"Disconnected stale client for relay {relay_url}")
+                except Exception as e:
+                    logger.debug(f"Error disconnecting stale client for {relay_url}: {e}")
+                finally:
+                    # Remove the old client
+                    if relay_url in self.clients:
+                        del self.clients[relay_url]
             
-            client = self.clients[relay_url]
+            # Create a fresh client for this relay
+            client = Client(self.signer)
+            self.clients[relay_url] = client
             
             # Parse relay URL
             parsed_relay_url = RelayUrl.parse(relay_url)
@@ -117,31 +127,72 @@ class NostrClient:
             logger.error(f"Error connecting to Nostr relay {relay_url}: {e}")
             self.relay_status[relay_url]['connected'] = False
             self.relay_status[relay_url]['failure_count'] += 1
+        finally:
+            # Clean up client if connection failed
+            if relay_url in self.relay_status and not self.relay_status[relay_url]['connected']:
+                if relay_url in self.clients:
+                    try:
+                        await asyncio.wait_for(self.clients[relay_url].disconnect(), timeout=5.0)
+                    except:
+                        pass
+                    del self.clients[relay_url]
             
         return False
     
     async def verify_relay_connection(self, relay_url: str) -> bool:
-        """Verify that a relay connection is still active"""
+        """Verify that a relay connection is still active with active testing"""
         if relay_url not in self.clients:
             return False
             
-        if not self.relay_status.get(relay_url, {}).get('connected', False):
-            return False
-            
+        # Don't rely solely on internal status, actively test the connection
         try:
             client = self.clients[relay_url]
-            # Try to get relay info as a connection test
+            
+            # First check if client thinks it's connected
             relays = await asyncio.wait_for(client.relays(), timeout=5.0)
             parsed_relay_url = RelayUrl.parse(relay_url)
             
-            if parsed_relay_url in relays:
-                relay = relays[parsed_relay_url]
-                is_connected = relay.is_connected()
-                self.relay_status[relay_url]['connected'] = is_connected
-                return is_connected
-            else:
+            if parsed_relay_url not in relays:
+                logger.debug(f"Relay {relay_url} not found in client relays")
                 self.relay_status[relay_url]['connected'] = False
                 return False
+            
+            relay = relays[parsed_relay_url]
+            if not relay.is_connected():
+                logger.debug(f"Relay {relay_url} reports not connected")
+                self.relay_status[relay_url]['connected'] = False
+                return False
+            
+            # Actively test the connection by sending a lightweight request
+            # We'll subscribe to a filter that shouldn't return any events as a keepalive
+            try:
+                from nostr_sdk import Filter, Kind
+                # Create a filter that's unlikely to match any events (using a future date)
+                future_timestamp = int(time.time()) + 86400  # 24 hours in the future
+                filter_obj = Filter().kinds([Kind(65535)]).since(future_timestamp)
+                
+                # Try to send the subscription - this will fail if connection is dead
+                await asyncio.wait_for(client.req_events_of([filter_obj]), timeout=5.0)
+                logger.debug(f"Active connection test successful for {relay_url}")
+                self.relay_status[relay_url]['connected'] = True
+                return True
+            except asyncio.TimeoutError:
+                logger.debug(f"Active connection test timeout for {relay_url}")
+                self.relay_status[relay_url]['connected'] = False
+                return False
+            except Exception as active_test_error:
+                logger.debug(f"Active connection test failed for {relay_url}: {active_test_error}")
+                # Some errors might indicate the connection is still alive
+                # Check if it's a "no events found" type error which is actually good
+                error_str = str(active_test_error).lower()
+                if "timeout" in error_str or "disconnected" in error_str or "closed" in error_str:
+                    self.relay_status[relay_url]['connected'] = False
+                    return False
+                else:
+                    # Other errors might not indicate connection problems
+                    logger.debug(f"Active test error may not indicate connection issue: {active_test_error}")
+                    self.relay_status[relay_url]['connected'] = True
+                    return True
                 
         except Exception as e:
             logger.debug(f"Connection verification failed for relay {relay_url}: {e}")
@@ -253,6 +304,13 @@ class NostrClient:
                     
                     status['last_checked'] = current_time
                     
+                    # If relay is connected, send a keepalive ping
+                    if status['connected']:
+                        logger.debug(f"Sending keepalive ping to relay {relay_url}")
+                        if not await self._send_keepalive_ping(relay_url):
+                            logger.warning(f"Keepalive ping failed for relay {relay_url}")
+                            status['connected'] = False
+                    
                     # If relay is disconnected and we haven't exceeded retry attempts
                     if not status['connected'] and status['failure_count'] < health_config.get('retry_attempts', 3):
                         logger.info(f"Attempting to reconnect to relay {relay_url}")
@@ -267,6 +325,29 @@ class NostrClient:
             except Exception as e:
                 logger.error(f"Error in relay health check: {e}")
                 await asyncio.sleep(60)  # Wait 1 minute on error
+    
+    async def _send_keepalive_ping(self, relay_url: str) -> bool:
+        """Send a lightweight keepalive ping to maintain connection"""
+        if relay_url not in self.clients:
+            return False
+            
+        try:
+            client = self.clients[relay_url]
+            
+            # Send a lightweight request to keep the connection alive
+            # We'll subscribe to a filter that shouldn't return any events
+            from nostr_sdk import Filter, Kind
+            # Create a filter that's unlikely to match any events (using a future date)
+            future_timestamp = int(time.time()) + 86400  # 24 hours in the future
+            filter_obj = Filter().kinds([Kind(65535)]).since(future_timestamp)
+            
+            # Send the subscription request with a short timeout
+            await asyncio.wait_for(client.req_events_of([filter_obj]), timeout=3.0)
+            logger.debug(f"Keepalive ping successful for {relay_url}")
+            return True
+        except Exception as e:
+            logger.debug(f"Keepalive ping failed for {relay_url}: {e}")
+            return False
     
     async def start_health_monitoring(self) -> None:
         """Start background health monitoring task"""
@@ -286,14 +367,22 @@ class NostrClient:
     
     async def disconnect_all(self) -> None:
         """Disconnect from all Nostr relays"""
-        # Cancel any pending operations first
-        for relay_url, client in self.clients.items():
+        logger.info("Disconnecting from all Nostr relays")
+        
+        # Create a list of relay URLs to avoid dictionary modification during iteration
+        relay_urls = list(self.clients.keys())
+        
+        for relay_url in relay_urls:
             try:
+                client = self.clients[relay_url]
                 # Cancel any pending tasks associated with this client
-                if hasattr(client, '_pending_tasks'):
-                    for task in client._pending_tasks:
-                        task.cancel()
+                if hasattr(client, 'close_subscription'):
+                    try:
+                        await client.close_subscription()
+                    except:
+                        pass
                 
+                # Disconnect with timeout
                 await asyncio.wait_for(client.disconnect(), timeout=5.0)
                 self.relay_status[relay_url]['connected'] = False
                 logger.info(f"Disconnected from Nostr relay: {relay_url}")
@@ -303,10 +392,13 @@ class NostrClient:
             except Exception as e:
                 logger.error(f"Error disconnecting from Nostr relay {relay_url}: {e}")
                 self.relay_status[relay_url]['connected'] = False
+            finally:
+                # Always remove the client from our tracking
+                if relay_url in self.clients:
+                    del self.clients[relay_url]
         
         self.active_relay = None
-        # Clear clients to free memory
-        self.clients.clear()
+        logger.info("Finished disconnecting from all Nostr relays")
 
 # Example of how to use the Nostr client
 if __name__ == "__main__":

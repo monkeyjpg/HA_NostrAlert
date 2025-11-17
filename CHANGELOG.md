@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.27] - 2025-11-17
+
+### Fixed
+
+- Enhanced Nostr relay connection management with active connection verification
+- Added keepalive mechanism to prevent server-side connection timeouts
+- Improved reconnection logic with proper client cleanup and recreation
+- Fixed signal handler coroutine handling issues
+- Enhanced resource cleanup in disconnect_all method
+- Added more robust error handling for WebSocket connection failures
+
 ## [0.1.26] - 2025-11-15
 
 ### Fixed

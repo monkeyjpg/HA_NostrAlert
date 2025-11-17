@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 class Config:
     def __init__(self, config_path: str = '/config.yaml'):
-        self.config_path = config_path
+        # Allow overriding config path through environment variable for testing
+        self.config_path = os.environ.get('CONFIG_PATH', config_path)
         self.config = self.load_config()
     
     def load_config(self) -> Dict[str, Any]:

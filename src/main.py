@@ -77,8 +77,12 @@ def signal_handler(signum, frame):
             for task in pending:
                 task.cancel()
             
-            loop.run_until_complete(nostr_client.stop_health_monitoring())
-            loop.run_until_complete(nostr_client.disconnect_all())
+            # Create a new async function to handle the cleanup
+            async def cleanup():
+                await nostr_client.stop_health_monitoring()
+                await nostr_client.disconnect_all()
+            
+            loop.run_until_complete(cleanup())
             loop.run_until_complete(loop.shutdown_asyncgens())
         except Exception as e:
             logger.error(f"Error disconnecting from Nostr: {e}")
