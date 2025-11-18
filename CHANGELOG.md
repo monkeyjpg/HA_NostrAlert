@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.29] - 2025-11-18
+
+### Fixed
+
+- **Critical Relay Disconnection Issue**: Resolved the ~12-hour relay disconnection problem by enabling WebSocket-level ping/pong and auto-reconnection in the nostr-sdk library
+- **Enhanced Connection Management**: Added proper relay options configuration with `.ping(True)`, `.reconnect(True)`, and `.adjust_retry_interval(True)` to prevent silent connection drops
+- **Improved Health Monitoring**: Updated health check logic to work in conjunction with built-in relay reconnection mechanisms
+- **Better Connection Verification**: Enhanced connection verification to properly detect dead WebSocket connections before message sending fails
+
 ## [0.1.28] - 2025-11-17
 
 ### Fixed

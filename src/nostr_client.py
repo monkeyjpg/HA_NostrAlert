@@ -68,7 +68,7 @@ class NostrClient:
             raise  # Re-raise the exception
     
     async def connect_to_relay(self, relay_url: str) -> bool:
-        """Connect to a specific Nostr relay"""
+        """Connect to a specific Nostr relay with proper connection options"""
         try:
             # If we already have a client for this relay, disconnect it first to avoid stale connections
             if relay_url in self.clients:
@@ -90,8 +90,15 @@ class NostrClient:
             # Parse relay URL
             parsed_relay_url = RelayUrl.parse(relay_url)
             
-            # Add relay with timeout
-            await asyncio.wait_for(client.add_relay(parsed_relay_url), timeout=15.0)
+            # Create relay options with proper connection management
+            from nostr_sdk import RelayOptions
+            relay_options = RelayOptions()\
+                .ping(True)\
+                .reconnect(True)\
+                .adjust_retry_interval(True)
+            
+            # Add relay with custom options and timeout
+            await asyncio.wait_for(client.add_relay_with_opts(parsed_relay_url, relay_options), timeout=15.0)
             
             # Connect to relay with timeout
             await asyncio.wait_for(client.connect(), timeout=15.0)
@@ -278,14 +285,20 @@ class NostrClient:
                     
                     status['last_checked'] = current_time
                     
-                    # If relay is connected, send a keepalive ping
+                    # If relay is marked as connected, verify it's actually connected
                     if status['connected']:
-                        logger.debug(f"Sending keepalive ping to relay {relay_url}")
-                        if not await self._send_keepalive_ping(relay_url):
-                            logger.warning(f"Keepalive ping failed for relay {relay_url}")
+                        logger.debug(f"Verifying connection to relay {relay_url}")
+                        if not await self.verify_relay_connection(relay_url):
+                            logger.warning(f"Relay {relay_url} connection verification failed")
+                            # With auto-reconnect enabled, we should let the relay handle reconnection
+                            # But we'll mark it as disconnected in our tracking
                             status['connected'] = False
+                            status['failure_count'] += 1
+                        else:
+                            logger.debug(f"Relay {relay_url} connection verified")
                     
                     # If relay is disconnected and we haven't exceeded retry attempts
+                    # This is a fallback in case auto-reconnect fails
                     if not status['connected'] and status['failure_count'] < health_config.get('retry_attempts', 3):
                         logger.info(f"Attempting to reconnect to relay {relay_url}")
                         await self.connect_to_relay(relay_url)
